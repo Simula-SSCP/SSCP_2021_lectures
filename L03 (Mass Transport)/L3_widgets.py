@@ -11,7 +11,7 @@ VoltageClampWidget().display()
 
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.integrate import odeint
+from scipy.integrate import solve_ivp
 from ipywidgets import interact, IntSlider, FloatSlider
 
 
@@ -25,33 +25,35 @@ class VoltageClampWidget:
     def V_target(self, t):
         return (t > 2)*(t < 6)*40 - 80
 
-    def I_app(self, V, t):
+    def I_app(self, t, V):
         return (V - self.V_target(t))/self.Rs
 
-    def I_cap(self, V, t):
-        return -self.I_app(V, t)
+    def I_cap(self, t, V):
+        return -self.I_app(t, V)
 
-    def dV_dt(self, V, t):
-        return -self.I_app(V, t)/self.Cm
+    def dV_dt(self, t, V):
+        return -self.I_app(t, V)/self.Cm
 
     def solve_and_plot(self, Cm, Rs):
         self.Cm = Cm
         self.Rs = Rs
-        time = np.arange(0, 10.1, 0.01)
-        V0 = -80
-        V = odeint(self.dV_dt, V0, time)
-        V = V[:, 0]
+        T = (0, 10)
+        V0 = (-80,)
+        solution = solve_ivp(self.dV_dt, T, V0, max_step=0.01)
+        
+        t = solution.t
+        V, = solution.y
 
         f, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
 
         # Potential Plot
-        ax1.plot(time, V)
-        ax1.plot(time, self.V_target(time))
+        ax1.plot(t, V, label='Actual')
+        ax1.plot(t, self.V_target(t), label='Target')
         ax1.set_ylabel('Mem. Potential [mV]')
-        ax1.legend(['V', 'Target'])
+        ax1.legend()
 
         # I_cap plot
-        ax2.plot(time, self.I_cap(V, time))
+        ax2.plot(t, self.I_cap(t, V))
         ax2.set_ylabel('Cap. current')
         ax2.set_xlabel('Time [ms]')
         ax2.axis((0, 10, -5, 5))
@@ -76,28 +78,30 @@ class MembraneWidget():
     E_K = -86
     E_Ca = 114
 
-    def dV_dt(self,V, t):
+    def dV_dt(self, t, V):
         g_Na, g_Ca, g_K = self.g_Na, self.g_Ca, self.g_K
         E_Na, E_Ca, E_K = self.E_Na, self.E_Ca, self.E_K
         return -(g_Na*(V-E_Na) + g_K*(V - E_K) + g_Ca*(V - E_Ca))/self.Cm
 
     def solve_and_plot(self, g_Na, g_Ca, g_K):
-        self.g_Na = g_Na
-        self.g_Ca = g_Ca
-        self.g_K = g_K
+        self.g_Na = g_Na*1e-3
+        self.g_Ca = g_Ca*1e-3
+        self.g_K = g_K*1e-3
 
-        time = np.linspace(0, 200, 2001)
-        V0 = 0
-        V = odeint(self.dV_dt, V0, time)
-        V_eq = V[-1, 0]
+        T = (0, 20)
+        V0 = (0,)
+        solution = solve_ivp(self.dV_dt, T, V0, max_step=0.5)
+        
+        t = solution.t
+        V, = solution.y
 
-        plt.axhline(V_eq, linewidth=2.0)
+        plt.plot(t, V, linewidth=2.0)
         plt.axhline(114, alpha=0.5, color='black', linestyle='--')
         plt.axhline(70, alpha=0.5, color='black', linestyle='--')
         plt.axhline(-86, alpha=0.5, color='black', linestyle='--')
         plt.xlabel('Time [ms]')
         plt.ylabel('Mem. Potential [mV]')
-        plt.axis((0., 200, -90, 120))
+        plt.axis((0., 20, -90, 120))
         plt.show()
 
     def display(self):
@@ -108,5 +112,5 @@ class MembraneWidget():
 
 
 if __name__ == '__main__':
-   #VoltageClampWidget().display()
+   VoltageClampWidget().display()
    MembraneWidget().display()
