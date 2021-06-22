@@ -26,7 +26,7 @@ class CICR_Widget ():
 
     plt.subplot(3,1,1); plt.plot(time,y[:,0]); plt.title('c'); plt.axis([0, 1000, 0, 1])
     plt.subplot(3,1,2); plt.plot(time,y[:,1]); plt.title('cSR'); plt.axis([0, 1000, 0, 10])
-    plt.subplot(3,1,3); plt.plot(time,y[:,2]); plt.title('TnC'); plt.axis([0, 1000, 0, 0.3])
+    plt.subplot(3,1,3); plt.plot(time,y[:,2]); plt.title('cTnC'); plt.axis([0, 1000, 0, 0.3])
     plt.show()
 
 
